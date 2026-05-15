@@ -655,8 +655,11 @@ tr:hover td{background:#fafbfc;}
 
 <script>
 var sbClient=null,CU=null,UP=null,PROG={},MODS=[],CUR=null,QUIZ=[],ANS={},USERS=[];
+// ── SUPABASE CONFIG ── replace these two values if you ever change project
+var SB_URL='https://ubzeanvsenerkdaaylbf.supabase.co';
+var SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InViemVhbnZzZW5lcmtkYWF5bGJmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg3MDQyNDQsImV4cCI6MjA5NDI4MDI0NH0.VFzTRyqHRWlek4XLYd2NLZfuzkfn_QA9cnGsALR4Tl0';
 
-function getConfig(){return{url:localStorage.getItem('lh_url')||'',key:localStorage.getItem('lh_key')||''};}
+function getConfig(){return{url:SB_URL,key:SB_KEY};}
 
 function initSB(){
   var c=getConfig();if(!c.url||!c.key)return false;
