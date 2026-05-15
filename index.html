@@ -749,7 +749,7 @@ function doLogout(){
   localStorage.clear();
   if(u)localStorage.setItem('lh_url',u);if(k)localStorage.setItem('lh_key',k);
   initSB();
-  ['loginEmail','loginPass','regName','regEmail','regPass'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
+  ['loginEmail','loginPass','regName','regEmail','regPass'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});  var lb=document.getElementById('loginBtn');if(lb){lb.disabled=false;lb.textContent='Sign In →';}  var rb=document.getElementById('registerBtn');if(rb){rb.disabled=false;rb.textContent='Create Account →';}
   ['loginMsg','registerMsg','forgotMsg'].forEach(function(id){var el=document.getElementById(id);if(el)el.textContent='';});
   showAuthForms();switchTab('login');showPage('authPage');
 }
@@ -762,8 +762,8 @@ function loadAll(){
   ]).then(function(results){
     UP=results[0].data;
     PROG={};(results[1].data||[]).forEach(function(r){PROG[r.course_id]=r;});
-    var co=UP?UP.company||'IWK':'IWK';
-    MODS=(results[2].data||[]).filter(function(m){return m.company==='both'||m.company===co;});
+    var co=UP&&UP.company?UP.company:'IWK';
+    MODS=(results[2].data||[]).filter(function(m){return !m.company||m.company==='both'||m.company===co;});
   });
 }
 
