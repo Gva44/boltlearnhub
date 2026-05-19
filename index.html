@@ -354,6 +354,22 @@ body{font-family:'Inter',sans-serif;background:#f4f6f9;color:#1a1f36;min-height:
 .qr-emoji{font-size:52px;margin-bottom:10px;}
 .qr-pct{font-size:40px;font-weight:800;color:#1a2d5a;letter-spacing:-.5px;margin-bottom:6px;}
 .qr-msg{font-size:14px;color:#64748b;font-weight:500;}
+.ans-summary{margin-top:24px;text-align:left;border-top:1px solid #e8ecf0;padding-top:20px;}
+.ans-summary-title{font-size:13px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.8px;margin-bottom:14px;}
+.ans-row{border-radius:10px;padding:14px 16px;margin-bottom:10px;border:1.5px solid;}
+.ans-row-right{background:#f0fdf4;border-color:#86efac;}
+.ans-row-wrong{background:#fef2f2;border-color:#fca5a5;}
+.ans-row-top{display:flex;align-items:flex-start;gap:10px;margin-bottom:8px;}
+.ans-num{font-size:11px;font-weight:700;color:#94a3b8;background:#f1f5f9;padding:2px 8px;border-radius:20px;white-space:nowrap;margin-top:1px;}
+.ans-icon{font-size:16px;font-weight:700;flex-shrink:0;}
+.ans-row-right .ans-icon{color:#16a34a;}
+.ans-row-wrong .ans-icon{color:#dc2626;}
+.ans-q{font-size:14px;font-weight:600;color:#1a1f36;line-height:1.4;}
+.ans-row-bottom{display:flex;flex-direction:column;gap:4px;padding-left:52px;}
+.ans-your{font-size:13px;color:#dc2626;}
+.ans-your strong{font-weight:600;}
+.ans-correct{font-size:13px;color:#16a34a;}
+.ans-correct strong{font-weight:600;}
 
 /* Completion */
 .completion-box{background:linear-gradient(135deg,#f0fdf8,#dcfce7);border:1.5px solid #86efac;border-radius:14px;padding:24px 28px;display:flex;align-items:center;gap:20px;margin-top:22px;}
@@ -770,6 +786,14 @@ function loadAll(){
   });
 }
 
+function reloadProfile(){
+  return sbClient.from('profiles').select('*').eq('id',CU.id).single().then(function(r){
+    if(r.data) UP=r.data;
+    var isAdm=UP&&UP.is_admin;
+    ['admbtn1','admbtn2'].forEach(function(id){var el=document.getElementById(id);if(el)el.style.display=isAdm?'':'none';});
+  });
+}
+
 function getP(id){if(!PROG[id])PROG[id]={course_id:id,video_watched:false,quiz_score:null,completed:false};return PROG[id];}
 function saveP(id){
   var p=getP(id);
@@ -784,6 +808,8 @@ function getDone(){return MODS.filter(function(m){return getP(m.id).completed;})
 function getPct(){return MODS.length?Math.round(getDone()/MODS.length*100):0;}
 
 function navTo(page){
+  if(CU&&(!UP||UP.is_admin===undefined)) reloadProfile();
+
   var co=UP?UP.company||'IWK':'IWK';
   var name=UP?UP.full_name||CU.email||'U':'U';
   var init=name.charAt(0).toUpperCase();
@@ -1142,13 +1168,67 @@ function submitQuiz(){
     var emoji=score===100?'&#127942;':score>=75?'&#127881;':score>=50?'&#128077;':'&#128218;';
     var msg=score===100?'Perfect score!':score>=75?'Great job!':score>=50?'Passed!':'Review the video and try again.';
     var res=document.getElementById('qResult');
-    if(res){res.className='quiz-result show';res.innerHTML='<div class="qr-emoji">'+emoji+'</div><div class="qr-pct">'+score+'%</div><div class="qr-msg">'+msg+' ('+correct+'/'+QUIZ.length+' correct)</div>';}
+    if(res){
+      res.className='quiz-result show';
+      // Score summary
+      var rh='<div class="qr-emoji">'+emoji+'</div>';
+      rh+='<div class="qr-pct">'+score+'%</div>';
+      rh+='<div class="qr-msg">'+msg+' — '+correct+' of '+QUIZ.length+' correct</div>';
+      // Answer summary table
+      rh+='<div class="ans-summary">';
+      rh+='<div class="ans-summary-title">Answer Review</div>';
+      QUIZ.forEach(function(q,qi){
+        var chosen=ANS[qi];
+        var isCorrect=chosen===q.correct_answer;
+        var opts=[q.option_a,q.option_b,q.option_c,q.option_d];
+        var rowCls=isCorrect?'ans-row-right':'ans-row-wrong';
+        rh+='<div class="ans-row '+rowCls+'">';
+        rh+='<div class="ans-row-top">';
+        rh+='<span class="ans-num">Q'+(qi+1)+'</span>';
+        rh+='<span class="ans-icon">'+(isCorrect?'&#10003;':'&#10007;')+'</span>';
+        rh+='<span class="ans-q">'+q.question+'</span>';
+        rh+='</div>';
+        rh+='<div class="ans-row-bottom">';
+        if(!isCorrect){
+          rh+='<span class="ans-your">Your answer: <strong>'+( chosen!==undefined?opts[chosen]:'No answer')+'</strong></span>';
+        }
+        rh+='<span class="ans-correct">Correct answer: <strong>'+opts[q.correct_answer]+'</strong></span>';
+        rh+='</div>';
+        rh+='</div>';
+      });
+      rh+='</div>';
+      res.innerHTML=rh;
+    }
     var sb=document.getElementById('subBtn');if(sb)sb.disabled=true;
     var hs=document.querySelector('.quiz-hd-score');if(hs)hs.textContent='Last: '+score+'%';
     toast('Score saved');
     if(p.completed)showCompletion();
-    renderLesson();
+    // update sidebar only
+    var done=getDone(),pct=getPct();
+    document.getElementById('lsbPct').textContent=pct+'% Completed';
+    document.getElementById('lsbFill').style.width=pct+'%';
+    buildSidebarList();
   });
+}
+
+function buildSidebarList(){
+  var lh='';
+  MODS.forEach(function(mod,i){
+    var cp=getP(mod.id),ul=isUnlocked(i);
+    var isAct=CUR&&mod.id===CUR.id;
+    var icCls=cp.completed?'ic-done':isAct?'ic-active':ul?'ic-todo':'ic-lock';
+    var icTxt=cp.completed?'&#10003;':isAct?'&#9654;':ul?(i+1)+'':'L';
+    var lsiCls='lsi'+(isAct?' active-lsi':'')+(ul?'':' locked-lsi');
+    var clickAttr=ul?'data-lid="'+mod.id+'"':'';
+    var sub=cp.completed?'Completed':isAct?'Currently viewing':ul?'Not started':'Locked';
+    lh+='<div class="'+lsiCls+'" '+clickAttr+'>';
+    lh+='<div class="lsi-bar"></div>';
+    lh+='<div class="lsi-ic '+icCls+'">'+icTxt+'</div>';
+    lh+='<div class="lsi-body"><div class="lsi-title">'+mod.title+'</div><div class="lsi-sub">'+sub+'</div></div>';
+    lh+='</div>';
+  });
+  var el=document.getElementById('lsbItems');
+  if(el) el.innerHTML=lh;
 }
 
 function showCompletion(){
