@@ -786,6 +786,22 @@ function loadAll(){
   });
 }
 
+function getAvatarColor(name){
+  var colors=[
+    'linear-gradient(135deg,#1a2d5a,#2a4a8a)',
+    'linear-gradient(135deg,#065f46,#2ecc9a)',
+    'linear-gradient(135deg,#7c3aed,#a855f7)',
+    'linear-gradient(135deg,#b45309,#f59e0b)',
+    'linear-gradient(135deg,#0f4c75,#1b6ca8)',
+    'linear-gradient(135deg,#831843,#ec4899)',
+    'linear-gradient(135deg,#134e4a,#14b8a6)',
+    'linear-gradient(135deg,#1e3a5f,#3b82f6)'
+  ];
+  var idx=0;
+  for(var i=0;i<name.length;i++) idx+=name.charCodeAt(i);
+  return colors[idx%colors.length];
+}
+
 function reloadProfile(){
   return sbClient.from('profiles').select('*').eq('id',CU.id).single().then(function(r){
     if(r.data) UP=r.data;
@@ -813,6 +829,8 @@ function navTo(page){
   var co=UP?UP.company||'IWK':'IWK';
   var name=UP?UP.full_name||CU.email||'U':'U';
   var init=name.charAt(0).toUpperCase();
+  var avatarColor=getAvatarColor(name);
+  ['ubtn1','ubtn2'].forEach(function(id){var el=document.getElementById(id);if(el)el.style.background=avatarColor;});
   var isAdm=UP&&UP.is_admin;
   var pct=getPct();
   // Update navbars
